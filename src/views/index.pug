@@ -1,0 +1,85 @@
+doctype html
+html
+  head
+    meta(charset="UTF-8")
+    title Auto Screenshot
+    meta(name="X-UA-Compatible" content="IE=edge")
+    meta(name="viewport" content="width=device-width")
+    link(rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous")
+    script.
+      var URLS = '#{urls}';
+      var WIDTH = '#{width}';
+      var HEIGHT = '#{height}';
+      window.addEventListener('DOMContentLoaded', initialize);
+
+      function initialize () {
+        try {
+          var urls = URLS.split(',');
+          if (!urls[0]) {
+            return;
+          }
+          var $w = document.getElementById('width');
+          var $h = document.getElementById('height');
+          var wVal = WIDTH || $w.value;
+          var hVal = HEIGHT || $h.value;
+          $w.value = wVal;
+          $h.value = hVal;
+          var baseData = {
+            width: parseInt(wVal, 10),
+            height: parseInt(hVal, 10)
+          };
+          var shoots = urls.map(function (url) {
+            var data = Object.assign({}, baseData, { url: url });
+            return shoot(data);
+          });
+          Promise.all(shoots);
+        } catch (e) {
+          output(e.message);
+        }
+      }
+
+      function shoot (data) {
+        fetch('/shoot', {
+          body: JSON.stringify(data),
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'}
+        }).then(function (res) {
+          return res.json();
+        }).then(function (json) {
+          if (json.messages) {
+            json.messages.forEach(function (msg) { output(msg); });
+          }
+        });
+      }
+
+      function output (msg) {
+        var $log = document.getElementById('log');
+        $log.innerHTML += msg + '\n';
+      }
+  body
+    .container
+      header.frame-header
+        h1 Auto Screenshot
+      hr
+      main.frame-main
+        form(method="post" action="./")
+          p
+            label(for="width") Screen Width:&nbsp;
+            input(type="number" name="width" id="width"  maxlength="5" size="20" value="1024")
+          p
+            label(for="height") Screen Height:&nbsp;
+            input(type="number" name="height" id="height" maxlength="6" size="20" value="2048")
+          p
+            label(for="urls") Enter line-break-separated URLs to the following field.
+            br
+            textarea(rows="8" cols="70" name="urls" id="urls")
+              | https://likealunatic.jp
+              | foo bar buzz
+              | https://google.com
+          p
+            button.button(type="submit") Start
+        pre.log
+          code(style="display: block; height: 200px; background-color: #f1f1f1; padding: 10px; overflow: auto;")#log
+      footer.frame-footer
+        p: small Code licensed <a href="https://github.com/twbs/bootstrap/blob/master/LICENSE" target="_blank" rel="license noopener">MIT</a>
+
